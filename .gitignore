@@ -5,6 +5,13 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+### 이미지 저장 절대경로 작성 ###
+application-dir.properties
+
+### DB 데이터 및 스키마 작성 ###
+data.sql
+schema.sql
+
 ### STS ###
 .apt_generated
 .classpath
