@@ -12,8 +12,8 @@ import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -46,9 +46,6 @@ public class TestControllerV1 {
     @GetMapping("/api/v1/cards")
     public ResponseEntity<CardsResponseDto<List<CardDto>>> getCardInfoV1(Pageable pageable) {
         List<CardDto> cards = testService.findCards(pageable, imgUrl);
-
-        log.info("받아라~ 카드 요청 나가신다!!!");
-
         return new ResponseEntity<>(new CardsResponseDto<>(cards, cards.size()), OK);
     }
 
@@ -58,7 +55,7 @@ public class TestControllerV1 {
                                                      HttpServletRequest request) throws IOException, ParseException
     {
         if (file.isEmpty()) {
-            return new ResponseEntity<>(new SuccessResponseDto(false), BAD_REQUEST);
+            return ResponseEntity.badRequest().build();
         }
 
         // get user
@@ -101,19 +98,24 @@ public class TestControllerV1 {
 
         TestResponseDto responseDto = testService.findTestsById(testId);
 
-        // 더 유연한 응답 스킬이 있을 것 같음
         if (Objects.isNull(responseDto.getTitle()) || Objects.isNull(responseDto.getTestData()))
-            return new ResponseEntity<>(responseDto, NOT_FOUND);
+            return ResponseEntity.notFound().build();
 
         return new ResponseEntity<>(responseDto, OK);
     }
 
-    // 테스트의 특정 결과 요청, Result 컨트롤러 분리??????
-    @GetMapping("/api/v1/tests/{testId}/results/{resultId}") // 90% 완성 응답 false 처리
-    public ResultResponseDto findResultV1(@PathVariable Long testId,
-                                          @PathVariable String resultId)
+    // 4. 테스트의 특정 결과 요청, Result 컨트롤러 분리?
+    @GetMapping("/api/v1/tests/{testId}/results/{resultId}")
+    public ResponseEntity<ResultResponseDto<List<TestResultDataDto>>> findResultV1(@PathVariable Long testId,
+                                                                                   @PathVariable String resultId)
     {
-        return testService.findSingleResultByTwoId(testId, resultId);
+        ResultResponseDto<List<TestResultDataDto>> responseDto = testService.findResult(testId, resultId);
+
+        if (Objects.isNull(responseDto.getResultData())) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return new ResponseEntity<>(responseDto, OK);
     }
 
     // 특정 테스트 삭제 요청

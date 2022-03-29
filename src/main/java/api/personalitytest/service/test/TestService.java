@@ -77,15 +77,17 @@ public class TestService {
         return new TestResponseDto(optionalTest.get().getTitle(), testData);
     }
 
-    @Transactional(readOnly = true) // 메서드 명 수정하면 좋을 것 같음
-    public ResultResponseDto findSingleResultByTwoId(Long testId, String resultId) {
+    @Transactional(readOnly = true)
+    public ResultResponseDto<List<TestResultDataDto>> findResult(Long testId, String resultId) {
 
-        Test test = testRepository.findById(testId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 테스트가 없습니다. testId=" + testId));
+        Optional<Test> optionalTest = testRepository.findById(testId);
 
-        List<Result> testResultList = resultRepository.findTestResultList(testId, resultId);
+        if (optionalTest.isEmpty()) {
+            return new ResultResponseDto<>();
+        }
 
-        return new ResultResponseDto(true, testResultList);
+        return new ResultResponseDto<>(resultRepository.findTestResultList(testId, resultId)
+                .stream().map(TestResultDataDto::new).collect(Collectors.toList()));
     }
 
     @Transactional(readOnly = true)
