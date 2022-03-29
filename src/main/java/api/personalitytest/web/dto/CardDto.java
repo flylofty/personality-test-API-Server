@@ -10,17 +10,9 @@ public class CardDto {
     private String imgUrl;
     private String title;
 
-    public CardDto(Test entity) {
+    public CardDto(Test entity, String postDir) {
         this.id = entity.getId();
-        this.imgUrl = entity.getFullImageName();
+        this.imgUrl = postDir + entity.getFullImageName();
         this.title = entity.getTitle();
-    }
-
-    /**
-     * "http://localhost:8081/images/"
-     * 이것 작성한 것이 살짝 흠인 것 같음
-     */
-    public void addDir() {
-        this.imgUrl = "http://localhost:8081/images/" + this.imgUrl;
     }
 }

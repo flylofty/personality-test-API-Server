@@ -12,6 +12,7 @@ import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -34,10 +36,14 @@ public class TestControllerV1 {
     @Value("${file.dir}")
     private String fileDir;
 
-    // 시작 페이지 데이터 요청
+    @Value("${client.imageUrl}")
+    private String imgUrl;
+
+    // 시작 페이지 Card Component 데이터 요청
     @GetMapping("/api/v1/cards")
-    public CardsResponseDto getRendingPageTestsV1(Pageable pageable) {
-        return testService.findCards(pageable);
+    public ResponseEntity<CardsResponseDto<List<CardDto>>> getCardInfoV1(Pageable pageable) {
+        List<CardDto> cards = testService.findCards(pageable, imgUrl);
+        return ResponseEntity.ok(new CardsResponseDto<>(cards, cards.size()));
     }
 
     // 테스트 등록

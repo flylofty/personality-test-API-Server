@@ -8,7 +8,6 @@ import api.personalitytest.domain.test.Test;
 import api.personalitytest.domain.test.TestRepository;
 import api.personalitytest.web.dto.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -27,6 +27,12 @@ public class TestService {
     private final TestRepository testRepository;
     private final ItemRepository itemRepository;
     private final ResultRepository resultRepository;
+
+    @Transactional(readOnly = true)
+    public List<CardDto> findCards(Pageable pageable, String postDir) {
+        return testRepository.findAll(pageable)
+                .stream().map(p -> new CardDto(p, postDir)).collect(Collectors.toList());
+    }
 
     @Transactional
     public String save(UserSaveRequestDto userSaveRequestDto, ArrayList<ResultSaveRequestDto> resultSaveRequestDtoList,
@@ -75,18 +81,6 @@ public class TestService {
         List<Result> testResultList = resultRepository.findTestResultList(testId, resultId);
 
         return new ResultResponseDto(true, testResultList);
-    }
-
-    @Transactional(readOnly = true)
-    public CardsResponseDto findCards(Pageable pageable) {
-
-        Page<Test> all = testRepository.findAll(pageable);
-
-        CardsResponseDto cardsResponseDto = new CardsResponseDto(true, all);
-
-        cardsResponseDto.createFullPath();
-
-        return cardsResponseDto;
     }
 
     @Transactional(readOnly = true)

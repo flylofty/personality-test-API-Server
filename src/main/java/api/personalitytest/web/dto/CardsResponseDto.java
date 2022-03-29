@@ -1,26 +1,14 @@
 package api.personalitytest.web.dto;
 
-import api.personalitytest.domain.test.Test;
 import lombok.Getter;
-import org.springframework.data.domain.Page;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
-public class CardsResponseDto {
+public class CardsResponseDto<T> {
 
-    private Boolean success;
-    private List<CardDto> cards;
+    private T cards;
+    private int count;
 
-    public CardsResponseDto(Boolean success, Page<Test> testPage) {
-        this.success = success;
-        this.cards = testPage.stream().map(CardDto::new).collect(Collectors.toList());
-    }
-
-    public void createFullPath() {
-        for (CardDto card : cards) {
-            card.addDir();
-        }
+    public CardsResponseDto(T cards, int count) {
+        this.cards = cards;
     }
 }
