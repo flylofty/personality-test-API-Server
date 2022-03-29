@@ -12,6 +12,7 @@ import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,7 +42,7 @@ public class TestControllerV1 {
     @Value("${client.imageUrl}")
     private String imgUrl;
 
-    // 시작 페이지 Card Component 데이터 요청
+    // 1. 시작 페이지 Card Component 데이터 요청
     @GetMapping("/api/v1/cards")
     public ResponseEntity<CardsResponseDto<List<CardDto>>> getCardInfoV1(Pageable pageable) {
         List<CardDto> cards = testService.findCards(pageable, imgUrl);
@@ -51,7 +52,7 @@ public class TestControllerV1 {
         return new ResponseEntity<>(new CardsResponseDto<>(cards, cards.size()), OK);
     }
 
-    // 테스트 등록
+    // 2. 테스트 등록
     @PostMapping("/api/v1/tests") // 간단하게 코드 수정하면 좋을 것 같음!!
     public ResponseEntity<SuccessResponseDto> saveV1(@RequestParam MultipartFile file,
                                                      HttpServletRequest request) throws IOException, ParseException
@@ -86,7 +87,7 @@ public class TestControllerV1 {
             itemSaveRequestDtoList.add(new ItemSaveRequestDto((JSONObject) obj));
         }
 
-        // save & get image
+        // save
         String fullImageName = testService.save(userSaveRequestDto, resultSaveRequestDtoList, itemSaveRequestDtoList);
         String fullPath = fileDir + fullImageName;
         file.transferTo(new File(fullPath));
@@ -94,11 +95,17 @@ public class TestControllerV1 {
         return new ResponseEntity<>(new SuccessResponseDto(true), CREATED);
     }
 
-    // 테스트 단건 요청
-    @GetMapping("/api/v1/tests/{testId}") // 90% 완성 응답 false 처리
-    public TestResponseDto findByTestIdV1(@PathVariable Long testId) {
+    // 3. 테스트 단건 요청
+    @GetMapping("/api/v1/tests/{testId}")
+    public ResponseEntity<TestResponseDto> findByTestIdV1(@PathVariable Long testId) {
 
-        return testService.findTestsById(testId);
+        TestResponseDto responseDto = testService.findTestsById(testId);
+
+        // 더 유연한 응답 스킬이 있을 것 같음
+        if (Objects.isNull(responseDto.getTitle()) || Objects.isNull(responseDto.getTestData()))
+            return new ResponseEntity<>(responseDto, NOT_FOUND);
+
+        return new ResponseEntity<>(responseDto, OK);
     }
 
     // 테스트의 특정 결과 요청, Result 컨트롤러 분리??????

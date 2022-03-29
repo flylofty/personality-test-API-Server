@@ -65,12 +65,16 @@ public class TestService {
     @Transactional(readOnly = true)
     public TestResponseDto findTestsById(Long testId) {
 
-        Test test = testRepository.findById(testId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 테스트가 없습니다. testId=" + testId));
+        Optional<Test> optionalTest = testRepository.findById(testId);
 
-        List<Item> testItemList = itemRepository.findAllByTestId(testId);
+        if (optionalTest.isEmpty()) {
+            return new TestResponseDto();
+        }
 
-        return new TestResponseDto(true, test, testItemList);
+        List<TestItemDataDto> testData = itemRepository.findAllByTestId(testId)
+                .stream().map(TestItemDataDto::new).collect(Collectors.toList());
+
+        return new TestResponseDto(optionalTest.get().getTitle(), testData);
     }
 
     @Transactional(readOnly = true) // 메서드 명 수정하면 좋을 것 같음
