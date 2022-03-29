@@ -4,6 +4,7 @@ import api.personalitytest.domain.test.Test;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @NoArgsConstructor
@@ -12,6 +13,7 @@ public class UserSaveRequestDto {
     private String title;
     private String id; // => writer
     private String password;
+    private String fileName;
 
     @Builder
     public UserSaveRequestDto(String title, String id, String password) {
@@ -20,7 +22,11 @@ public class UserSaveRequestDto {
         this.password = password;
     }
 
-    public Test toEntity(String fileName) {
+    public void setRequestFileName(MultipartFile file) {
+        this.fileName = file.getOriginalFilename();
+    }
+
+    public Test toEntity() {
         return Test.builder()
                 .title(title)
                 .writer(id)

@@ -31,24 +31,25 @@ public class TestService {
     @Transactional(readOnly = true)
     public List<CardDto> findCards(Pageable pageable, String postDir) {
         return testRepository.findAll(pageable)
-                .stream().map(p -> new CardDto(p, postDir)).collect(Collectors.toList());
+                .stream().map(entity -> new CardDto(entity, postDir)).collect(Collectors.toList());
     }
 
     @Transactional
     public String save(UserSaveRequestDto userSaveRequestDto, ArrayList<ResultSaveRequestDto> resultSaveRequestDtoList,
-                     ArrayList<ItemSaveRequestDto> itemSaveRequestDtoList, String fileName) {
+                       ArrayList<ItemSaveRequestDto> itemSaveRequestDtoList) {
 
-        Long testId = testRepository.save(userSaveRequestDto.toEntity(fileName)).getId();
+        Test savedTest = testRepository.save(userSaveRequestDto.toEntity());
+        Long savedTestId = savedTest.getId();
 
         for (ResultSaveRequestDto resultSaveRequestDto : resultSaveRequestDtoList) {
-            resultRepository.save(resultSaveRequestDto.toEntity(testId));
+            resultRepository.save(resultSaveRequestDto.toEntity(savedTestId));
         }
 
         for (ItemSaveRequestDto itemSaveRequestDto : itemSaveRequestDtoList) {
-            itemRepository.save(itemSaveRequestDto.toEntity(testId));
+            itemRepository.save(itemSaveRequestDto.toEntity(savedTestId));
         }
 
-        return testRepository.findById(testId).get().getFullImageName();
+        return savedTest.getFullImageName();
     }
 
     @Transactional

@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.springframework.http.HttpStatus.*;
+
 @Slf4j
 @RequiredArgsConstructor
 @RestController
@@ -43,19 +45,26 @@ public class TestControllerV1 {
     @GetMapping("/api/v1/cards")
     public ResponseEntity<CardsResponseDto<List<CardDto>>> getCardInfoV1(Pageable pageable) {
         List<CardDto> cards = testService.findCards(pageable, imgUrl);
-        return ResponseEntity.ok(new CardsResponseDto<>(cards, cards.size()));
+
+        log.info("받아라~ 카드 요청 나가신다!!!");
+
+        return new ResponseEntity<>(new CardsResponseDto<>(cards, cards.size()), OK);
     }
 
     // 테스트 등록
-    @PostMapping("/api/v1/tests") // 70% 완성 리턴값!, 간단하게 코드 수정하면 좋을 것 같음!!
-    public SuccessResponseDto saveV1(@RequestParam MultipartFile file,
-                                     HttpServletRequest request,
-                                     HttpServletResponse response) throws IOException, ParseException {
+    @PostMapping("/api/v1/tests") // 간단하게 코드 수정하면 좋을 것 같음!!
+    public ResponseEntity<SuccessResponseDto> saveV1(@RequestParam MultipartFile file,
+                                                     HttpServletRequest request) throws IOException, ParseException
+    {
+        if (file.isEmpty()) {
+            return new ResponseEntity<>(new SuccessResponseDto(false), BAD_REQUEST);
+        }
 
         // get user
         String requestUser = request.getParameter("user");
         ObjectMapper objectMapper = new ObjectMapper();
         UserSaveRequestDto userSaveRequestDto = objectMapper.readValue(requestUser, UserSaveRequestDto.class);
+        userSaveRequestDto.setRequestFileName(file);
 
         // get result
         String requestResults = request.getParameter("results");
@@ -77,15 +86,12 @@ public class TestControllerV1 {
             itemSaveRequestDtoList.add(new ItemSaveRequestDto((JSONObject) obj));
         }
 
-        //get image & save
-        log.info("multipartFile={}", file);
-        if (!file.isEmpty()) {
-            String imageName = testService.save(userSaveRequestDto, resultSaveRequestDtoList, itemSaveRequestDtoList, file.getOriginalFilename());
-            String fullPath = fileDir + imageName;
-            file.transferTo(new File(fullPath));
-        }
+        // save & get image
+        String fullImageName = testService.save(userSaveRequestDto, resultSaveRequestDtoList, itemSaveRequestDtoList);
+        String fullPath = fileDir + fullImageName;
+        file.transferTo(new File(fullPath));
 
-        return new SuccessResponseDto(true);
+        return new ResponseEntity<>(new SuccessResponseDto(true), CREATED);
     }
 
     // 테스트 단건 요청
