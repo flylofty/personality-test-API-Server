@@ -123,7 +123,7 @@ public class TestControllerV1 {
 
     // 5. 테스트 수정 전 인증 요청, WARNING: raw use of parameterized class
     @PostMapping("/api/v1/tests/{testId}/edit-page")
-    public ResponseEntity authenticateUserV1(@PathVariable Long testId,
+    public ResponseEntity<SuccessResponseDto> authenticateUserV1(@PathVariable Long testId,
                                              @RequestBody AuthenticationRequestDto requestDto,
                                              HttpServletRequest request)
     {
@@ -141,10 +141,12 @@ public class TestControllerV1 {
             session.setAttribute(SessionConst.UPDATE_TEST, requestDto);
 
             session.setMaxInactiveInterval(600);
-            return ResponseEntity.status(OK).build();
+            return ResponseEntity.status(OK)
+                    .body(new SuccessResponseDto(true));
         }
 
-        return ResponseEntity.status(UNAUTHORIZED).build();
+        return ResponseEntity.status(UNAUTHORIZED)
+                .body(new SuccessResponseDto(false));
     }
 
     // 6. 수정 페이지 요청
