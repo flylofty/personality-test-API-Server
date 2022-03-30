@@ -91,18 +91,10 @@ public class TestService {
     }
 
     @Transactional(readOnly = true)
-    public SuccessResponseDto authenticateUser(AuthenticationRequestDto requestDto) throws IOException {
+    public Boolean authenticateUser(Long testId, AuthenticationRequestDto requestDto) {
 
-        Optional<Test> findTest = testRepository.findById(requestDto.getTestId());
-
-        if (findTest.isPresent()) {
-            // 인증 성공
-            if (findTest.get().authenticateUser(requestDto)) {
-                return new SuccessResponseDto(true);
-            }
-        }
-
-        return new SuccessResponseDto(false);
+        return testRepository.findById(testId)
+                .map(test -> test.authenticateUser(requestDto)).orElse(false);
     }
 
     @Transactional(readOnly = true)

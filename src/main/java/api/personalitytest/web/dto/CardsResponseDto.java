@@ -10,5 +10,6 @@ public class CardsResponseDto<T> {
 
     public CardsResponseDto(T cards, int count) {
         this.cards = cards;
+        this.count = count;
     }
 }

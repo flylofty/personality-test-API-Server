@@ -12,8 +12,8 @@ import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -46,7 +46,9 @@ public class TestControllerV1 {
     @GetMapping("/api/v1/cards")
     public ResponseEntity<CardsResponseDto<List<CardDto>>> getCardInfoV1(Pageable pageable) {
         List<CardDto> cards = testService.findCards(pageable, imgUrl);
-        return new ResponseEntity<>(new CardsResponseDto<>(cards, cards.size()), OK);
+
+        return ResponseEntity.status(OK)
+                .body(new CardsResponseDto<>(cards, cards.size()));
     }
 
     // 2. 테스트 등록
@@ -55,7 +57,7 @@ public class TestControllerV1 {
                                                      HttpServletRequest request) throws IOException, ParseException
     {
         if (file.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(BAD_REQUEST).build();
         }
 
         // get user
@@ -86,10 +88,10 @@ public class TestControllerV1 {
 
         // save
         String fullImageName = testService.save(userSaveRequestDto, resultSaveRequestDtoList, itemSaveRequestDtoList);
-        String fullPath = fileDir + fullImageName;
-        file.transferTo(new File(fullPath));
+        file.transferTo(new File(fileDir + fullImageName));
 
-        return new ResponseEntity<>(new SuccessResponseDto(true), CREATED);
+        return ResponseEntity.status(CREATED)
+                .body(new SuccessResponseDto(true));
     }
 
     // 3. 테스트 단건 요청
@@ -99,9 +101,9 @@ public class TestControllerV1 {
         TestResponseDto responseDto = testService.findTestsById(testId);
 
         if (Objects.isNull(responseDto.getTitle()) || Objects.isNull(responseDto.getTestData()))
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(NOT_FOUND).build();
 
-        return new ResponseEntity<>(responseDto, OK);
+        return ResponseEntity.status(OK).body(responseDto);
     }
 
     // 4. 테스트의 특정 결과 요청, Result 컨트롤러 분리?
@@ -112,46 +114,35 @@ public class TestControllerV1 {
         ResultResponseDto<List<TestResultDataDto>> responseDto = testService.findResult(testId, resultId);
 
         if (Objects.isNull(responseDto.getResultData())) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(NOT_FOUND).build();
         }
 
-        return new ResponseEntity<>(responseDto, OK);
+        // return new ResponseEntity<>(responseDto, OK);
+        return ResponseEntity.status(OK).body(responseDto);
     }
 
-    // 특정 테스트 삭제 요청
-    @PostMapping("/api/v1/tests/{testId}/delete") // 90% 완성, 응답 false 처리
-    public SuccessResponseDto deleteV1(@PathVariable Long testId,
-                                       @RequestBody TestDeleteRequestDto requestDto) {
-
-        requestDto.setRequestTestId(testId);
-
-        return testService.delete(requestDto);
-    }
-
-    // 테스트 수정 전 인증 요청
+    // 5. 테스트 수정 전 인증 요청
     @PostMapping("/api/v1/tests/{testId}/edit-page")
-    public SuccessResponseDto authenticateUserV1(@PathVariable Long testId,
-                                                 @RequestBody AuthenticationRequestDto requestDto,
-                                                 HttpServletRequest request,
-                                                 HttpServletResponse response) throws IOException {
-        // 사용자 인증
-        requestDto.setRequestTestId(testId);
-        SuccessResponseDto responseDto = testService.authenticateUser(requestDto);
-
-        // 메서드 처리하면 좋을 거 같음
-        // 인증 성공
-        if (responseDto.getSuccess()) {
+    public ResponseEntity authenticateUserV1(@PathVariable Long testId,
+                                             @RequestBody AuthenticationRequestDto requestDto,
+                                             HttpServletRequest request)
+    {
+        // 사용자 인증 성공
+        if (testService.authenticateUser(testId, requestDto)) {
 
             // 세션 생성, 옵션이 있는데 default 는 true
             // true => 기존 세션이 있으면 해당 세션을 찾아서 꺼내주고 아니면 새로 만듦
             // false => 기존 세션이 있으면 해당 세션을 반환 그렇지 않으면 세션을 생성하지 않음
             HttpSession session = request.getSession();
 
+            requestDto.setRequestTestId(testId);
             // 세션에 보관하고 싶은 객체를 저장 session.setAttribute(key, value) 이용
             session.setAttribute(SessionConst.UPDATE_TEST, requestDto);
+
+            return ResponseEntity.status(OK).build();
         }
 
-        return responseDto;
+        return ResponseEntity.status(UNAUTHORIZED).build();
     }
 
     // 수정 페이지 요청
@@ -228,5 +219,15 @@ public class TestControllerV1 {
 
         // service 통해 Test update
         return testService.update(testId, testUpdateRequestDto, resultUpdateRequestDtoList, itemUpdateRequestDtoList, file, fileDir);
+    }
+
+    // 8. 특정 테스트 삭제 요청
+    @PostMapping("/api/v1/tests/{testId}/delete") // 90% 완성, 응답 false 처리
+    public SuccessResponseDto deleteV1(@PathVariable Long testId,
+                                       @RequestBody TestDeleteRequestDto requestDto) {
+
+        requestDto.setRequestTestId(testId);
+
+        return testService.delete(requestDto);
     }
 }
