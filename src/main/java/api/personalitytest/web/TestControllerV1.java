@@ -12,13 +12,11 @@ import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
@@ -185,20 +183,40 @@ public class TestControllerV1 {
         return ResponseEntity.status(OK).body(responseDto);
     }
 
-    // 테스트 등록과 유사하게 JSON 파싱 해야함!!!!!!!!!!!!
+    // 테스트 등록과 유사하게 JSON 파싱함
     @PostMapping("/api/v1/tests/{testId}/edit")
-    public SuccessResponseDto update(@PathVariable Long testId,
-                                     @RequestParam MultipartFile file,
-                                     HttpServletRequest request,
-                                     HttpServletResponse response) throws IOException, ParseException
+    public ResponseEntity<SuccessResponseDto> update(@PathVariable Long testId,
+                                                     @RequestParam MultipartFile file,
+                                                     HttpServletRequest request) throws IOException, ParseException
     {
-        // 세션 조회
+        //세션 조회
         HttpSession session = request.getSession(false);
 
-        // 세션 Null 인 경우 => redirect
+        // 세션이 없는 경우, 인증된 사용자가 아님 403
         if (session == null) {
-            log.info("update session == null");
-            return new SuccessResponseDto(false);
+            return ResponseEntity.status(FORBIDDEN)
+                    .body(new SuccessResponseDto(false));
+        }
+
+        AuthenticationRequestDto authenticationDto
+                = (AuthenticationRequestDto) session.getAttribute(SessionConst.UPDATE_TEST);
+
+        // Null 값 체크, BAD_REQUEST??? FORBIDDEN???
+        if (Objects.isNull(authenticationDto)) {
+            session.invalidate();
+            return ResponseEntity.status(FORBIDDEN)
+                    .body(new SuccessResponseDto(false));
+        }
+
+        if (!Objects.equals(authenticationDto.getTestId(), testId)) {
+            session.invalidate();
+            return ResponseEntity.status(FORBIDDEN)
+                    .body(new SuccessResponseDto(false));
+        }
+
+        if (file.isEmpty()) {
+            return ResponseEntity.status(BAD_REQUEST)
+                    .body(new SuccessResponseDto(false));
         }
 
         // JSON 파싱 => DTO
@@ -207,10 +225,7 @@ public class TestControllerV1 {
         // get test
         String requestTest = request.getParameter("test");
         TestUpdateRequestDto testUpdateRequestDto = objectMapper.readValue(requestTest, TestUpdateRequestDto.class);
-
-        if (!file.isEmpty()) {
-            testUpdateRequestDto.setRequestImageName(file.getOriginalFilename());
-        }
+        testUpdateRequestDto.setRequestImageName(file);
 
         // get result
         String requestResults = request.getParameter("results");
@@ -233,7 +248,16 @@ public class TestControllerV1 {
         session.invalidate();
 
         // service 통해 Test update
-        return testService.update(testId, testUpdateRequestDto, resultUpdateRequestDtoList, itemUpdateRequestDtoList, file, fileDir);
+        String fullImageName = testService.update(testId, testUpdateRequestDto, resultUpdateRequestDtoList, itemUpdateRequestDtoList);
+
+        if (Objects.equals(fullImageName, "")) {
+            ResponseEntity.status(NOT_FOUND)
+                    .body(new SuccessResponseDto(false));
+        }
+
+        file.transferTo(new File(fileDir + fullImageName));
+        return ResponseEntity.status(OK)
+                .body(new SuccessResponseDto(true));
     }
 
     // 8. 특정 테스트 삭제 요청
