@@ -98,13 +98,12 @@ public class TestService {
     }
 
     @Transactional(readOnly = true)
-    public ResponseEntity<TestUpdateResponseDto> getUpdateTest(Long testId, String postDir) {
+    public TestUpdateResponseDto getUpdateTest(Long testId, String postDir) {
 
         Optional<Test> optionalTest = testRepository.findById(testId);
 
         if (optionalTest.isEmpty()) {
-//            return new ResponseEntity(null, HttpStatus.NOT_FOUND);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return new TestUpdateResponseDto();
         }
 
         List<UpdateItemDto> items = itemRepository.findAllByTestId(testId)
@@ -115,8 +114,7 @@ public class TestService {
 
         UpdateUserDto userItem = new UpdateUserDto(optionalTest.get());
 
-//        return new ResponseEntity<>(new TestUpdateResponseDto(postDir + optionalTest.get().getFullImageName(), items, resultContent, userItem), HttpStatus.OK);
-        return ResponseEntity.status(HttpStatus.OK).body(new TestUpdateResponseDto(postDir + optionalTest.get().getFullImageName(), items, resultContent, userItem));
+        return new TestUpdateResponseDto(postDir + optionalTest.get().getFullImageName(), items, resultContent, userItem);
     }
 
     @Transactional

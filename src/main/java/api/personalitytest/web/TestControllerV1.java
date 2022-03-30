@@ -176,7 +176,13 @@ public class TestControllerV1 {
             return ResponseEntity.status(FORBIDDEN).build();
         }
 
-        return testService.getUpdateTest(testId, imgUrl);
+        TestUpdateResponseDto responseDto = testService.getUpdateTest(testId, imgUrl);
+
+        if (responseDto.isNull()){
+            return ResponseEntity.status(NOT_FOUND).build();
+        }
+
+        return ResponseEntity.status(OK).body(responseDto);
     }
 
     // 테스트 등록과 유사하게 JSON 파싱 해야함!!!!!!!!!!!!
