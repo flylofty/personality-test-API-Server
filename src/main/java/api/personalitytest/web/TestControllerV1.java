@@ -262,11 +262,17 @@ public class TestControllerV1 {
 
     // 8. 특정 테스트 삭제 요청
     @PostMapping("/api/v1/tests/{testId}/delete") // 90% 완성, 응답 false 처리
-    public SuccessResponseDto deleteV1(@PathVariable Long testId,
-                                       @RequestBody TestDeleteRequestDto requestDto) {
+    public ResponseEntity<SuccessResponseDto> deleteV1(@PathVariable Long testId,
+                                                       @RequestBody TestDeleteRequestDto requestDto) {
 
         requestDto.setRequestTestId(testId);
 
-        return testService.delete(requestDto);
+        SuccessResponseDto responseDto = testService.delete(requestDto);
+
+        if (responseDto.getSuccess()) {
+            return ResponseEntity.status(BAD_REQUEST).body(responseDto);
+        }
+
+        return ResponseEntity.status(OK).body(responseDto);
     }
 }

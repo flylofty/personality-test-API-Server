@@ -52,10 +52,16 @@ public class TestService {
     @Transactional
     public SuccessResponseDto delete(TestDeleteRequestDto requestDto) {
 
-        Test test = testRepository.findByDeleteRequest(requestDto.getTestId(), requestDto.getUserId(), requestDto.getPassword())
-                .orElseThrow(() -> new IllegalArgumentException("해당 테스트가 없습니다. testId=" + requestDto.getTestId()));
+//        Test test = testRepository.findByDeleteRequest(requestDto.getTestId(), requestDto.getUserId(), requestDto.getPassword())
+//                .orElseThrow(() -> new IllegalArgumentException("해당 테스트가 없습니다. testId=" + requestDto.getTestId()));
 
-        testRepository.delete(test);
+        Optional<Test> optionalTest = testRepository.findByDeleteRequest(requestDto.getTestId(), requestDto.getUserId(), requestDto.getPassword());
+
+        if (optionalTest.isEmpty()) {
+            return new SuccessResponseDto(false);
+        }
+
+        testRepository.delete(optionalTest.get());
         return new SuccessResponseDto(true);
     }
 
