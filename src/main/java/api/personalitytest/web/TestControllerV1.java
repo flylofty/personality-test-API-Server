@@ -12,6 +12,7 @@ import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -265,14 +266,14 @@ public class TestControllerV1 {
     public ResponseEntity<SuccessResponseDto> deleteV1(@PathVariable Long testId,
                                                        @RequestBody TestDeleteRequestDto requestDto) {
 
-        requestDto.setRequestTestId(testId);
+        HttpStatus httpStatus = testService.delete(testId, requestDto);
 
-        SuccessResponseDto responseDto = testService.delete(requestDto);
-
-        if (responseDto.getSuccess()) {
-            return ResponseEntity.status(BAD_REQUEST).body(responseDto);
+        if (OK != httpStatus) {
+            return ResponseEntity.status(httpStatus)
+                    .body(new SuccessResponseDto(false));
         }
 
-        return ResponseEntity.status(OK).body(responseDto);
+        return ResponseEntity.status(httpStatus)
+                .body(new SuccessResponseDto(true));
     }
 }

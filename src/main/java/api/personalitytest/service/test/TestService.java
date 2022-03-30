@@ -7,10 +7,10 @@ import api.personalitytest.domain.test.TestRepository;
 import api.personalitytest.web.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -50,19 +50,20 @@ public class TestService {
     }
 
     @Transactional
-    public SuccessResponseDto delete(TestDeleteRequestDto requestDto) {
+    public HttpStatus delete(Long testId, TestDeleteRequestDto requestDto) {
 
-//        Test test = testRepository.findByDeleteRequest(requestDto.getTestId(), requestDto.getUserId(), requestDto.getPassword())
-//                .orElseThrow(() -> new IllegalArgumentException("해당 테스트가 없습니다. testId=" + requestDto.getTestId()));
-
-        Optional<Test> optionalTest = testRepository.findByDeleteRequest(requestDto.getTestId(), requestDto.getUserId(), requestDto.getPassword());
+        Optional<Test> optionalTest = testRepository.findById(testId);
 
         if (optionalTest.isEmpty()) {
-            return new SuccessResponseDto(false);
+            return HttpStatus.BAD_REQUEST;
+        }
+
+        if (optionalTest.get().authenticateDeleteUser(requestDto)) {
+            return HttpStatus.UNAUTHORIZED;
         }
 
         testRepository.delete(optionalTest.get());
-        return new SuccessResponseDto(true);
+        return HttpStatus.OK;
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +98,7 @@ public class TestService {
     public Boolean authenticateUser(Long testId, AuthenticationRequestDto requestDto) {
 
         return testRepository.findById(testId)
-                .map(test -> test.authenticateUser(requestDto)).orElse(false);
+                .map(test -> test.authenticateUpdateUser(requestDto)).orElse(false);
     }
 
     @Transactional(readOnly = true)

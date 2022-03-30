@@ -2,6 +2,7 @@ package api.personalitytest.domain.test;
 
 import api.personalitytest.domain.BaseTimeEntity;
 import api.personalitytest.web.dto.AuthenticationRequestDto;
+import api.personalitytest.web.dto.TestDeleteRequestDto;
 import api.personalitytest.web.dto.TestUpdateRequestDto;
 import lombok.Builder;
 import lombok.Getter;
@@ -46,8 +47,12 @@ public class Test extends BaseTimeEntity {
         return this.getModifiedDate().format(DateTimeFormatter.ofPattern("yyyyMMddhhmmss")) + imageName;
     }
 
-    public boolean authenticateUser(AuthenticationRequestDto requestDto) {
+    public boolean authenticateUpdateUser(AuthenticationRequestDto requestDto) {
         return this.writer.equals(requestDto.getUserId()) && this.password.equals(requestDto.getPassword());
+    }
+
+    public boolean authenticateDeleteUser(TestDeleteRequestDto requestDto) {
+        return !(this.writer.equals(requestDto.getUserId()) && this.password.equals(requestDto.getPassword()));
     }
 
     public void update(TestUpdateRequestDto dto) {
