@@ -57,7 +57,8 @@ public class TestControllerV1 {
                                                      HttpServletRequest request) throws IOException, ParseException
     {
         if (file.isEmpty()) {
-            return ResponseEntity.status(BAD_REQUEST).build();
+            return ResponseEntity.status(BAD_REQUEST)
+                    .body(new SuccessResponseDto(false));
         }
 
         // get user
@@ -121,7 +122,7 @@ public class TestControllerV1 {
         return ResponseEntity.status(OK).body(responseDto);
     }
 
-    // 5. 테스트 수정 전 인증 요청
+    // 5. 테스트 수정 전 인증 요청, WARNING: raw use of parameterized class
     @PostMapping("/api/v1/tests/{testId}/edit-page")
     public ResponseEntity authenticateUserV1(@PathVariable Long testId,
                                              @RequestBody AuthenticationRequestDto requestDto,
@@ -136,38 +137,46 @@ public class TestControllerV1 {
             HttpSession session = request.getSession();
 
             requestDto.setRequestTestId(testId);
+
             // 세션에 보관하고 싶은 객체를 저장 session.setAttribute(key, value) 이용
             session.setAttribute(SessionConst.UPDATE_TEST, requestDto);
 
+            session.setMaxInactiveInterval(600);
             return ResponseEntity.status(OK).build();
         }
 
         return ResponseEntity.status(UNAUTHORIZED).build();
     }
 
-    // 수정 페이지 요청
+    // 6. 수정 페이지 요청
     @GetMapping("/api/v1/tests/{testId}/edit")
-    public TestUpdateResponseDto getTestUpdatePage(@PathVariable Long testId,
-                                  HttpServletRequest request,
-                                  HttpServletResponse response) throws IOException {
+    public ResponseEntity<TestUpdateResponseDto> getTestUpdatePage(@PathVariable Long testId, HttpServletRequest request) {
 
         //세션 조회, option 을 false 로 하여 세션 확인
         HttpSession session = request.getSession(false);
 
-        // 세션이 없는 경우, 랜딩 페이지로 redirect
+        // 세션이 없는 경우, 인증된 사용자가 아님 403
         if (session == null) {
-            return new TestUpdateResponseDto(false);
+            return ResponseEntity.status(FORBIDDEN).build();
         }
 
-        AuthenticationRequestDto authenticationDto = (AuthenticationRequestDto) session.getAttribute(SessionConst.UPDATE_TEST);
+        AuthenticationRequestDto authenticationDto
+                = (AuthenticationRequestDto) session.getAttribute(SessionConst.UPDATE_TEST);
 
-        // 테스트 아이디가 같지 않은 경우
+        // Null 값 체크, BAD_REQUEST??? FORBIDDEN???
+        if (Objects.isNull(authenticationDto)) {
+            session.invalidate();
+            return ResponseEntity.status(FORBIDDEN).build();
+        }
+
+        // 테스트 아이디가 같지 않은 경우, BAD_REQUEST??? FORBIDDEN???
+        // test A의 세션을 가지고 다른 test 수정 페이지를 요청한 경우
         if (!Objects.equals(authenticationDto.getTestId(), testId)) {
             session.invalidate();
-            return new TestUpdateResponseDto(false);
+            return ResponseEntity.status(FORBIDDEN).build();
         }
 
-        return testService.getUpdateTest(testId);
+        return testService.getUpdateTest(testId, imgUrl);
     }
 
     // 테스트 등록과 유사하게 JSON 파싱 해야함!!!!!!!!!!!!

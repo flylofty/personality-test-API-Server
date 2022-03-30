@@ -1,14 +1,14 @@
 package api.personalitytest.service.test;
 
-import api.personalitytest.domain.item.Item;
 import api.personalitytest.domain.item.ItemRepository;
-import api.personalitytest.domain.result.Result;
 import api.personalitytest.domain.result.ResultRepository;
 import api.personalitytest.domain.test.Test;
 import api.personalitytest.domain.test.TestRepository;
 import api.personalitytest.web.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -98,15 +98,25 @@ public class TestService {
     }
 
     @Transactional(readOnly = true)
-    public TestUpdateResponseDto getUpdateTest(Long testId) {
+    public ResponseEntity<TestUpdateResponseDto> getUpdateTest(Long testId, String postDir) {
 
-        Test test = testRepository.findById(testId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 테스트가 없습니다. testId" + testId));
+        Optional<Test> optionalTest = testRepository.findById(testId);
 
-        List<Item> itemList = itemRepository.findAllByTestId(testId);
-        List<Result> resultList = resultRepository.findAllByTestId(testId);
+        if (optionalTest.isEmpty()) {
+//            return new ResponseEntity(null, HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
 
-        return new TestUpdateResponseDto(true, itemList, resultList, test);
+        List<UpdateItemDto> items = itemRepository.findAllByTestId(testId)
+                .stream().map(UpdateItemDto::new).collect(Collectors.toList());
+
+        List<UpdateResultDto> resultContent = resultRepository.findAllByTestId(testId)
+                .stream().map(UpdateResultDto::new).collect(Collectors.toList());
+
+        UpdateUserDto userItem = new UpdateUserDto(optionalTest.get());
+
+//        return new ResponseEntity<>(new TestUpdateResponseDto(postDir + optionalTest.get().getFullImageName(), items, resultContent, userItem), HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(new TestUpdateResponseDto(postDir + optionalTest.get().getFullImageName(), items, resultContent, userItem));
     }
 
     @Transactional
