@@ -10,7 +10,6 @@ application-dir.properties
 
 ### DB 데이터 및 스키마 작성 ###
 data.sql
-schema.sql
 
 ### STS ###
 .apt_generated
